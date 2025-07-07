@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Data.Common;
+using System.Linq;
 using UserManagement.Services.Domain.Interfaces;
 using UserManagement.Web.Models.Users;
 
@@ -27,6 +28,47 @@ public class UsersController : Controller
             Items = items.ToList()
         };
 
-        return View(model);
+        return View("List", model);
     }
+
+    [HttpGet("Active")]
+    public ViewResult ListActive()
+    {
+        var items = _userService.FilterByActive(true).Select(p => new UserListItemViewModel
+        {
+            Id = p.Id,
+            Forename = p.Forename,
+            Surname = p.Surname,
+            Email = p.Email,
+            IsActive = p.IsActive
+        });
+
+        var model = new UserListViewModel
+        {
+            Items = items.ToList()
+        };
+
+        return View("List", model);
+    }
+
+    [HttpGet("NonActive")]
+    public ViewResult ListNonActive()
+    {
+        var items = _userService.FilterByActive(false).Select(p => new UserListItemViewModel
+        {
+            Id = p.Id,
+            Forename = p.Forename,
+            Surname = p.Surname,
+            Email = p.Email,
+            IsActive = p.IsActive
+        });
+
+        var model = new UserListViewModel
+        {
+            Items = items.ToList()
+        };
+
+        return View("List", model);
+    }
+
 }
