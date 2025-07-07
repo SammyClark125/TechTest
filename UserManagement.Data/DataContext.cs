@@ -33,6 +33,11 @@ public class DataContext : DbContext, IDataContext
     public IQueryable<TEntity> GetAll<TEntity>() where TEntity : class
         => base.Set<TEntity>();
 
+    public TEntity? GetByID<TEntity>(object key) where TEntity : class
+    {
+        return base.Find<TEntity>(key);
+    }
+
     public void Create<TEntity>(TEntity entity) where TEntity : class
     {
         base.Add(entity);
