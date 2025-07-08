@@ -6,6 +6,9 @@ namespace UserManagement.Data.Tests;
 
 public class DataContextTests
 {
+
+    private DataContext CreateContext() => new();
+
     [Fact]
     public void GetAll_WhenNewEntityAdded_MustIncludeNewEntity()
     {
@@ -44,5 +47,33 @@ public class DataContextTests
         result.Should().NotContain(s => s.Email == entity.Email);
     }
 
-    private DataContext CreateContext() => new();
+    [Fact]
+    public void GetByID_WhenUserExists_ReturnsUser()
+    {
+        // Arrange
+        var context = CreateContext();
+        var user = new User { Forename = "Alice", Surname = "Jones", Email = "alice@test.com" };
+        context.Create(user);
+
+        // Act
+        var result = context.GetByID<User>(user.Id);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Should().BeEquivalentTo(user);
+    }
+
+    [Fact]
+    public void GetByID_WhenUserDoesNotExist_ReturnsNull()
+    {
+        // Arrange
+        var context = CreateContext();
+
+        // Act
+        var result = context.GetByID<User>(999L); // unlikely to exist
+
+        // Assert
+        result.Should().BeNull();
+    }
+
 }
