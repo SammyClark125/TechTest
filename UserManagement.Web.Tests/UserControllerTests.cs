@@ -5,14 +5,18 @@ using UserManagement.Web.Models.Users;
 using UserManagement.WebMS.Controllers;
 using UserManagement.Web.Models.Requests;
 using System;
+using UserManagement.Services.Interfaces;
+using System.Linq;
+using UserManagement.Data.Entities;
 
-namespace UserManagement.Data.Tests;
+namespace UserManagement.Web.Tests;
 
 public class UserControllerTests
 {
 
     private readonly Mock<IUserService> _userService = new();
-    private UsersController CreateController() => new(_userService.Object);
+    private readonly Mock<ILogService> _logService = new();
+    private UsersController CreateController() => new(_userService.Object, _logService.Object);
 
     private User[] SetupUsers(string forename = "Johnny", string surname = "User", string email = "juser@example.com", bool isActive = true)
     {
@@ -39,29 +43,48 @@ public class UserControllerTests
     [Fact]
     public void List_WhenServiceReturnsUsers_ModelMustContainUsers()
     {
-        // Arrange: Initializes objects and sets the value of the data that is passed to the method under test.
+        // Arrange
         var controller = CreateController();
         var users = SetupUsers();
 
-        // Act: Invokes the method under test with the arranged parameters.
+        var expectedViewModels = users.Select(u => new UserListItemViewModel
+        {
+            Id = u.Id,
+            Forename = u.Forename,
+            Surname = u.Surname,
+            DateOfBirth = u.DateOfBirth,
+            Email = u.Email,
+            IsActive = u.IsActive
+        });
+
+        // Act
         var result = controller.List();
 
-        // Assert: Verifies that the action of the method under test behaves as expected.
+        // Assert
         result.Model
             .Should().BeOfType<UserListViewModel>()
-            .Which.Items.Should().BeEquivalentTo(users);
+            .Which.Items.Should().BeEquivalentTo(expectedViewModels);
     }
 
     [Fact]
-    public void ViewUser_WhenUserExists_ReturnsViewWithUser()
+    public void ViewUser_WhenUserExists_ReturnsViewWithUserLogsViewModel()
     {
+        // Arrange
         var user = new User { Id = 1 };
+        var logs = Enumerable.Empty<Log>();
         _userService.Setup(s => s.GetById(1)).Returns(user);
+        _logService.Setup(s => s.GetByUserId(1)).Returns(logs);
 
+        // Act
         var result = CreateController().ViewUser(1) as ViewResult;
 
-        result?.Model.Should().BeSameAs(user);
+        // Assert
+        result.Should().NotBeNull();
+        var model = result!.Model.Should().BeOfType<UserLogsViewModel>().Subject;
+        model.User.Should().BeSameAs(user);
+        model.Logs.Should().BeSameAs(logs);
     }
+
 
     [Fact]
     public void ViewUser_WhenUserNotFound_ReturnsNotFound()
@@ -173,5 +196,114 @@ public class UserControllerTests
         _userService.Verify(s => s.DeleteUser(It.IsAny<User>()), Times.Never);
     }
 
+    [Fact]
+    public void AddUser_Post_WhenValid_ShouldLogCreation()
+    {
+        // Arrange
+        var request = new AddUserRequest
+        {
+            Forename = "Log",
+            Surname = "User",
+            Email = "loguser@example.com",
+            DateOfBirth = new DateOnly(2000, 1, 1),
+            IsActive = true
+        };
+
+        var controller = CreateController();
+
+        // Act
+        controller.AddUser(request);
+
+        // Assert
+        _logService.Verify(log =>
+            log.LogAction(It.Is<User>(u => u.Email == request.Email), "Created", $"Created user {request.Email}"),
+            Times.Once);
+    }
+
+    [Fact]
+    public void AddUser_Post_WithInvalidModelState_ShouldNotLog()
+    {
+        var controller = CreateController();
+        controller.ModelState.AddModelError("Email", "Required");
+
+        var request = new AddUserRequest { Email = "bad@example.com" };
+
+        controller.AddUser(request);
+
+        _logService.Verify(log => log.LogAction(It.IsAny<User>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public void EditUser_Post_WhenValid_ShouldLogEdit()
+    {
+        // Arrange
+        var existing = new User { Id = 1, Email = "existing@example.com" };
+        _userService.Setup(s => s.GetById(existing.Id)).Returns(existing);
+
+        var updated = new User
+        {
+            Id = 1,
+            Forename = "Edited",
+            Surname = "User",
+            Email = "existing@example.com",
+            DateOfBirth = new DateOnly(1995, 5, 5),
+            IsActive = false
+        };
+
+        // Act
+        CreateController().EditUser(updated);
+
+        // Assert
+        _logService.Verify(log =>
+            log.LogAction(existing, "Edited", $"Edited user {existing.Email}"),
+            Times.Once);
+    }
+
+    [Fact]
+    public void EditUser_Post_WithInvalidModelState_ShouldNotLog()
+    {
+        var controller = CreateController();
+        controller.ModelState.AddModelError("Email", "Required");
+
+        var updated = new User { Id = 1, Email = "invalid@example.com" };
+
+        controller.EditUser(updated);
+
+        _logService.Verify(log => log.LogAction(It.IsAny<User>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public void EditUser_Post_WhenUserNotFound_ShouldNotLog()
+    {
+        var updated = new User { Id = 999, Email = "ghost@example.com" };
+        _userService.Setup(s => s.GetById(updated.Id)).Returns((User?)null);
+
+        CreateController().EditUser(updated);
+
+        _logService.Verify(log => log.LogAction(It.IsAny<User>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public void DeleteUser_WhenUserExists_ShouldLogDeletion()
+    {
+        var user = new User { Id = 1, Email = "delete@example.com" };
+        _userService.Setup(s => s.GetById(1)).Returns(user);
+
+        CreateController().DeleteUser(1);
+
+        _logService.Verify(log =>
+            log.LogAction(user, "Deleted", $"Deleted user {user.Email}"),
+            Times.Once);
+    }
+
+    [Fact]
+    public void DeleteUser_WhenUserNotFound_ShouldNotLog()
+    {
+        _userService.Setup(s => s.GetById(42)).Returns((User?)null);
+
+        CreateController().DeleteUser(42);
+
+        _logService.Verify(log => log.LogAction(It.IsAny<User>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+    }
 
 }
