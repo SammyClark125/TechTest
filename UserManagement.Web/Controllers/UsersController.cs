@@ -1,6 +1,7 @@
 ﻿using System.Linq;
 using UserManagement.Models;
 using UserManagement.Services.Domain.Interfaces;
+using UserManagement.Services.Interfaces;
 using UserManagement.Web.Models.Requests;
 using UserManagement.Web.Models.Users;
 
@@ -10,7 +11,12 @@ namespace UserManagement.WebMS.Controllers;
 public class UsersController : Controller
 {
     private readonly IUserService _userService;
-    public UsersController(IUserService userService) => _userService = userService;
+    private readonly ILogService _logService;
+    public UsersController(IUserService userService, ILogService logService)
+    {
+        _userService = userService;
+        _logService = logService;
+    }
 
     [HttpGet]
     public ViewResult List()
@@ -103,6 +109,7 @@ public class UsersController : Controller
         };
 
         _userService.CreateUser(user);
+        _logService.LogAction(user, "Created", $"Created user {user.Email}");
 
         return RedirectToAction("List");
     }
@@ -114,13 +121,18 @@ public class UsersController : Controller
     public IActionResult ViewUser(long id)
     {
         var user = _userService.GetById(id);
-
         if (user == null)
         {
             return NotFound();
         }
 
-        return View(user);
+        var model = new UserLogsViewModel
+        {
+            User = user,
+            Logs = _logService.GetByUserId(user.Id)
+        };
+
+        return View(model);
     }
 
 
@@ -162,6 +174,7 @@ public class UsersController : Controller
         existingUser.IsActive = updatedUser.IsActive;
 
         _userService.UpdateUser(existingUser);
+        _logService.LogAction(existingUser, "Edited", $"Edited user {existingUser.Email}");
         return RedirectToAction("List");
     }
 
@@ -179,6 +192,7 @@ public class UsersController : Controller
         }
 
         _userService.DeleteUser(user);
+        _logService.LogAction(user, "Deleted", $"Deleted user {user.Email}");
         return RedirectToAction("List");
     }
 

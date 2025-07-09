@@ -1,0 +1,20 @@
+﻿@using UserManagement.Web.Models.Logs
+
+@model LogDetailsViewModel
+@{
+    ViewData["Title"] = "Log Details";
+}
+
+<h2>Log Entry Details</h2>
+
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">@Model.Action</h5>
+        <p><strong>User:</strong> @Model.UserEmail</p>
+        <p><strong>Time:</strong> @Model.Timestamp.ToString("f")</p>
+        <p><strong>Details:</strong></p>
+        <pre>@Model.Details</pre>
+    </div>
+</div>
+
+<a asp-action="Index" class="btn btn-secondary mt-3">Back to Logs</a>

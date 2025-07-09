@@ -1,0 +1,74 @@
+﻿@using UserManagement.Web.Models.Logs
+
+@model LogIndexViewModel
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h2>Log Entries</h2>
+
+<form method="get" class="form-inline mb-3">
+    <input name="email" value="@Model.EmailFilter" class="form-control me-2" placeholder="Filter by email" />
+    <br />
+    <select name="actionFilter" class="form-control me-2">
+        @{
+            var actionOptions = new[] { "Created", "Edited", "Deleted" };
+            var selectedAction = Model.ActionFilter ?? "";
+
+            var allSelected = string.IsNullOrEmpty(selectedAction) ? " selected" : "";
+            @: <option value="" @allSelected>All Actions</option>
+
+            foreach (var action in actionOptions)
+            {
+                var selected = selectedAction == action ? " selected" : "";
+                @: <option value="@action" @selected>@action</option>
+            }
+        }
+    </select>
+    <br>
+    <button type="submit" class="btn btn-primary">Filter</button>
+</form>
+
+
+
+
+
+
+
+
+<br>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Action</th>
+            <th>User</th>
+            <th></th>
+    </thead>
+    <tbody>
+        @foreach (var log in Model.Logs)
+        {
+            <tr>
+                <td>@log.Timestamp.ToString("g")</td>
+                <td>@log.Action</td>
+                <td>@log.UserEmail</td>
+                <td>
+                    <a asp-action="View" asp-route-id="@log.Id" class="btn btn-sm btn-outline-secondary">View</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<nav>
+    <ul class="pagination">
+        @for (int i = 1; i <= Model.TotalPages; i++)
+        {
+            <li class="page-item @(i == Model.Page ? "active" : "")">
+                <a class="page-link" asp-action="Index" asp-route-page="@i" asp-route-email="@Model.EmailFilter"
+                    asp-route-actionFilter="@Model.ActionFilter">@i</a>
+            </li>
+        }
+    </ul>
+</nav>

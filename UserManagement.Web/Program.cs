@@ -8,6 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services
     .AddDataAccess()
     .AddDomainServices()
+    .AddLogServices()
     .AddMarkdown()
     .AddControllersWithViews();
 

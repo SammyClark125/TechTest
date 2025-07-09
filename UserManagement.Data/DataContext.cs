@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
+using UserManagement.Data.Entities;
 using UserManagement.Models;
 
 namespace UserManagement.Data;
@@ -13,7 +14,9 @@ public class DataContext : DbContext, IDataContext
         => options.UseInMemoryDatabase("UserManagement.Data.DataContext");
 
     protected override void OnModelCreating(ModelBuilder model)
-        => model.Entity<User>().HasData(new[]
+    {
+        // Seed Users
+        model.Entity<User>().HasData(new[]
         {
             new User { Id = 1, Forename = "Peter", Surname = "Loew", DateOfBirth = new DateOnly(1975, 5, 14), Email = "ploew@example.com", IsActive = true },
             new User { Id = 2, Forename = "Benjamin Franklin", Surname = "Gates", DateOfBirth = new DateOnly(1964, 3, 15), Email = "bfgates@example.com", IsActive = true },
@@ -28,7 +31,23 @@ public class DataContext : DbContext, IDataContext
             new User { Id = 11, Forename = "Robin", Surname = "Feld", DateOfBirth = new DateOnly(1950, 4, 28), Email = "rfeld@example.com", IsActive = true },
         });
 
+        // Configuring User relationship
+        model.Entity<User>()
+        .HasMany(u => u.Logs)
+        .WithOne(l => l.User)
+        .OnDelete(DeleteBehavior.Restrict); // Necessary to maintain logs on deleting users
+
+        // Configuring Log relationship
+        model.Entity<Log>()
+            .HasOne(log => log.User)
+            .WithMany(user => user.Logs)
+            .HasForeignKey(log => log.UserId)
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Cascade);
+    }
+
     public DbSet<User>? Users { get; set; }
+    public DbSet<Log>? UserLogEntries { get; set; }
 
     public IQueryable<TEntity> GetAll<TEntity>() where TEntity : class
         => base.Set<TEntity>();
@@ -55,4 +74,5 @@ public class DataContext : DbContext, IDataContext
         base.Remove(entity);
         SaveChanges();
     }
+
 }

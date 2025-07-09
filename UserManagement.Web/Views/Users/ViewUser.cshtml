@@ -1,15 +1,49 @@
-﻿@using UserManagement.Models
-@model User
+﻿@using UserManagement.Web.Models.Users
+@model UserLogsViewModel
 
 <h2>User Details</h2>
 
 <div class="card">
     <div class="card-body">
-        <h5 class="card-title">@Model.Forename @Model.Surname</h5>
-        <p class="card-text"><strong>Email:</strong> @Model.Email</p>
-        <p class="card-text"><strong>Date of Birth:</strong> @Model.DateOfBirth.ToShortDateString()</p>
-        <p class="card-text"><strong>Active:</strong> @(Model.IsActive ? "Yes" : "No")</p>
+        <h5 class="card-title">@Model.User.Forename @Model.User.Surname</h5>
+        <p class="card-text"><strong>Email:</strong> @Model.User.Email</p>
+        <p class="card-text"><strong>Date of Birth:</strong> @Model.User.DateOfBirth.ToShortDateString()</p>
+        <p class="card-text"><strong>Active:</strong> @(Model.User.IsActive ? "Yes" : "No")</p>
     </div>
 </div>
+
+<br>
+<h3>Action Logs</h3>
+
+@if (Model.Logs.Any())
+{
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Action</th>
+                <th>Details</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var log in Model.Logs.OrderByDescending(l => l.Timestamp))
+            {
+                <tr>
+                    <td>@log.Timestamp.ToString("g")</td>
+                    <td>@log.Action</td>
+                    <td>@log.Details</td>
+                    <td>
+                        <a asp-action="ViewLog" asp-route-id="@log.Id" class="btn btn-sm btn-outline-primary">View Full</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>No logs available for this user.</p>
+}
 
 <a asp-action="List" class="btn btn-secondary mt-3">Back to User List</a>
