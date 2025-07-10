@@ -27,7 +27,7 @@ public class LogsController : Controller
         if (!string.IsNullOrWhiteSpace(email))
         {
             email = email.Trim();
-            logs = logs.Where(l => l.User.Email.Contains(email, StringComparison.OrdinalIgnoreCase)).ToList();
+            logs = logs.Where(l => l.User?.Email != null && l.User.Email.Contains(email, StringComparison.OrdinalIgnoreCase)).ToList();
         }
 
         // Filter by Action
@@ -54,7 +54,7 @@ public class LogsController : Controller
                     Id = l.Id,
                     Action = l.Action,
                     Timestamp = l.Timestamp,
-                    UserEmail = l.User.Email
+                    UserEmail = l.User?.Email ?? "(deleted user)"
                 }),
                 EmailFilter = email,
                 ActionFilter = actionFilter,
@@ -84,7 +84,7 @@ public class LogsController : Controller
             Timestamp = log.Timestamp,
             Action = log.Action,
             Details = log.Details,
-            UserEmail = log.User.Email
+            UserEmail = log.User?.Email ?? "(deleted user)"
         };
 
         return View(model);

@@ -30,6 +30,19 @@ public class LogService : ILogService
         await _dataAccess.CreateAsync(newLog);
     }
 
+    public async Task LogActionAsync(long userId, string action, string? details = null) // Overload used for logging on deleting users
+    {
+        var newLog = new Log
+        {
+            UserId = userId,
+            Action = action,
+            Timestamp = DateTime.Now,
+            Details = details
+        };
+
+        await _dataAccess.CreateAsync(newLog);
+    }
+
     public async Task<List<Log>> GetAllAsync()
     {
         return await _dataAccess.GetAllIncludingAsync<Log>(l => l.User); // Includes parameter to include users in results

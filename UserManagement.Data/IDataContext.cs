@@ -16,7 +16,7 @@ public interface IDataContext
     /// <typeparam name="TEntity">The type of the entity to retrieve.</typeparam>
     /// <param name="includes">Navigation properties to include in the query results.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains a list of all entities with the specified includes.</returns>
-    Task<List<TEntity>> GetAllIncludingAsync<TEntity>(params Expression<Func<TEntity, object>>[] includes) where TEntity : class;
+    Task<List<TEntity>> GetAllIncludingAsync<TEntity>(params Expression<Func<TEntity, object?>>[] includes) where TEntity : class;
 
     /// <summary>
     /// Asynchronously retrieves an entity by its primary key.

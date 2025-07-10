@@ -269,7 +269,7 @@ public class UserControllerTests
         await CreateController().DeleteUser(1);
 
         _logService.Verify(log =>
-            log.LogActionAsync(user, "Deleted", $"Deleted user {user.Email}"),
+            log.LogActionAsync(user.Id, "Deleted", $"Deleted user {user.Email}"),
             Times.Once);
     }
 

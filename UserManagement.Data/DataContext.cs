@@ -34,19 +34,13 @@ public class DataContext : DbContext, IDataContext
             new User { Id = 11, Forename = "Robin", Surname = "Feld", DateOfBirth = new DateOnly(1950, 4, 28), Email = "rfeld@example.com", IsActive = true },
         });
 
-        // Configuring User relationship
-        model.Entity<User>()
-        .HasMany(u => u.Logs)
-        .WithOne(l => l.User)
-        .OnDelete(DeleteBehavior.Restrict); // Necessary to maintain logs on deleting users
-
         // Configuring Log relationship
         model.Entity<Log>()
             .HasOne(log => log.User)
             .WithMany(user => user.Logs)
             .HasForeignKey(log => log.UserId)
-            .IsRequired()
-            .OnDelete(DeleteBehavior.Cascade);
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.NoAction);
     }
 
     public DbSet<User>? Users { get; set; }
@@ -54,7 +48,7 @@ public class DataContext : DbContext, IDataContext
 
 
 
-    public async Task<List<TEntity>> GetAllIncludingAsync<TEntity>(params Expression<Func<TEntity, object>>[] includes) where TEntity : class
+    public async Task<List<TEntity>> GetAllIncludingAsync<TEntity>(params Expression<Func<TEntity, object?>>[] includes) where TEntity : class
     {
         IQueryable<TEntity> query = Set<TEntity>();
         foreach (var include in includes)
@@ -81,7 +75,7 @@ public class DataContext : DbContext, IDataContext
 
     public async Task DeleteAsync<TEntity>(TEntity entity) where TEntity : class
     {
-        base.Remove(entity);
+        Remove(entity);
         await SaveChangesAsync();
     }
 

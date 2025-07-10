@@ -78,7 +78,7 @@ public class LogServiceTests
     {
         // Arrange
         var logs = SetupLogs();
-        _dataContext.Setup(c => c.GetAllIncludingAsync<Log>(It.IsAny<System.Linq.Expressions.Expression<Func<Log, object>>>()
+        _dataContext.Setup(c => c.GetAllIncludingAsync<Log>(It.IsAny<System.Linq.Expressions.Expression<Func<Log, object?>>>()
 ))
             .ReturnsAsync(logs);
 
@@ -96,7 +96,7 @@ public class LogServiceTests
     {
         // Arrange
         var logs = SetupLogs();
-        _dataContext.Setup(c => c.GetAllIncludingAsync<Log>(It.IsAny<System.Linq.Expressions.Expression<Func<Log, object>>>()
+        _dataContext.Setup(c => c.GetAllIncludingAsync<Log>(It.IsAny<System.Linq.Expressions.Expression<Func<Log, object?>>>()
 ))
             .ReturnsAsync(logs);
 
@@ -114,7 +114,7 @@ public class LogServiceTests
     {
         // Arrange
         var logs = SetupLogs();
-        _dataContext.Setup(c => c.GetAllIncludingAsync<Log>(It.IsAny<System.Linq.Expressions.Expression<Func<Log, object>>>()
+        _dataContext.Setup(c => c.GetAllIncludingAsync<Log>(It.IsAny<System.Linq.Expressions.Expression<Func<Log, object?>>>()
 ))
             .ReturnsAsync(logs);
 
@@ -133,7 +133,7 @@ public class LogServiceTests
     {
         // Arrange
         var logs = SetupLogs();
-        _dataContext.Setup(c => c.GetAllIncludingAsync<Log>(It.IsAny<System.Linq.Expressions.Expression<Func<Log, object>>>()
+        _dataContext.Setup(c => c.GetAllIncludingAsync<Log>(It.IsAny<System.Linq.Expressions.Expression<Func<Log, object?>>>()
 ))
             .ReturnsAsync(logs);
 

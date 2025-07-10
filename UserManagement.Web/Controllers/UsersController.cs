@@ -185,8 +185,8 @@ public class UsersController : Controller
             return NotFound();
         }
 
+        await _logService.LogActionAsync(id, "Deleted", $"Deleted user {user.Email}");
         await _userService.DeleteUserAsync(user);
-        await _logService.LogActionAsync(user, "Deleted", $"Deleted user {user.Email}");
 
         return RedirectToAction("List");
     }

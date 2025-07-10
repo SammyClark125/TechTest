@@ -20,6 +20,15 @@ public interface ILogService
     Task LogActionAsync(User user, string action, string? details = null);
 
     /// <summary>
+    /// Asynchronously creates a new log entry for the specified user and action.
+    /// </summary>
+    /// <param name="userId">The id of the user the action was performed on</param>
+    /// <param name="action">The action that was performed</param>
+    /// <param name="details">Optional details about the action</param>
+    /// <returns></returns>
+    Task LogActionAsync(long userId, string action, string? details = null);
+
+    /// <summary>
     /// Asynchronously retrieves all logs.
     /// </summary>
     /// <returns>A task that represents the asynchronous operation. The task result contains a list of all logs.</returns>
