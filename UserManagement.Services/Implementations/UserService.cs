@@ -16,7 +16,7 @@ public class UserService : IUserService
 
     public async Task<List<User>> FilterByActiveAsync(bool isActive)
     {
-        var users = await _dataAccess.GetAllIncludingAsync<User>();
+        var users = await _dataAccess.GetAllIncludingAsync<User>(); // Doesn't need an include parameter
         return users.Where(u => u.IsActive == isActive).ToList();
     }
 

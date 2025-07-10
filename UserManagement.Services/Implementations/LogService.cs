@@ -32,7 +32,7 @@ public class LogService : ILogService
 
     public async Task<List<Log>> GetAllAsync()
     {
-        return await _dataAccess.GetAllIncludingAsync<Log>(l => l.User);
+        return await _dataAccess.GetAllIncludingAsync<Log>(l => l.User); // Includes parameter to include users in results
     }
 
     public async Task<List<Log>> GetByUserIdAsync(long userId)

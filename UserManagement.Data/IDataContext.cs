@@ -6,44 +6,48 @@ using System.Threading.Tasks;
 namespace UserManagement.Data;
 
 /// <summary>
-/// Defines an interface for generic data access methods
+/// Defines an interface for generic, asynchronous data access methods.
 /// </summary>
 public interface IDataContext
 {
     /// <summary>
-    /// Get a list of items
+    /// Asynchronously retrieves all entities of a given type, including related entities as specified.
     /// </summary>
-    /// <typeparam name="TEntity"> The type of the entity to retrieve </typeparam>
-    /// <returns> An IQueryable list representing all items of the entity type </returns>
+    /// <typeparam name="TEntity">The type of the entity to retrieve.</typeparam>
+    /// <param name="includes">Navigation properties to include in the query results.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains a list of all entities with the specified includes.</returns>
     Task<List<TEntity>> GetAllIncludingAsync<TEntity>(params Expression<Func<TEntity, object>>[] includes) where TEntity : class;
 
     /// <summary>
-    /// Get a single item by its key
+    /// Asynchronously retrieves an entity by its primary key.
     /// </summary>
-    /// <typeparam name="TEntity"> The type of the entity to retrieve </typeparam>
-    /// <param name="key"> The primary key of the item </param>
-    /// <returns> The item if found; otherwise null </returns>
+    /// <typeparam name="TEntity">The type of the entity to retrieve.</typeparam>
+    /// <param name="key">The primary key value of the entity.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the entity if found; otherwise, null.</returns>
     Task<TEntity?> GetByIDAsync<TEntity>(object key) where TEntity : class;
 
     /// <summary>
-    /// Create a new item
+    /// Asynchronously creates a new entity in the data store.
     /// </summary>
-    /// <typeparam name="TEntity"> The type of the entity to create </typeparam>
-    /// <param name="entity"> The item instance to create </param>
+    /// <typeparam name="TEntity">The type of the entity to create.</typeparam>
+    /// <param name="entity">The entity instance to add.</param>
+    /// <returns>A task that represents the asynchronous create operation.</returns>
     Task CreateAsync<TEntity>(TEntity entity) where TEntity : class;
 
     /// <summary>
-    /// Update an existing item matching the ID
+    /// Asynchronously updates an existing entity in the data store.
     /// </summary>
-    /// <typeparam name="TEntity"> The type of the entity to update </typeparam>
-    /// <param name="entity"> The item instance with updated values </param>
+    /// <typeparam name="TEntity">The type of the entity to update.</typeparam>
+    /// <param name="entity">The entity instance with updated values.</param>
+    /// <returns>A task that represents the asynchronous update operation.</returns>
     Task UpdateAsync<TEntity>(TEntity entity) where TEntity : class;
 
     /// <summary>
-    /// Delete an existing item matching the ID
+    /// Asynchronously deletes an entity from the data store.
     /// </summary>
-    /// <typeparam name="TEntity"> The type of the entity to delete </typeparam>
-    /// <param name="entity"> The item to remove </param>
+    /// <typeparam name="TEntity">The type of the entity to delete.</typeparam>
+    /// <param name="entity">The entity instance to remove.</param>
+    /// <returns>A task that represents the asynchronous delete operation.</returns>
     Task DeleteAsync<TEntity>(TEntity entity) where TEntity : class;
 
 }
