@@ -1,39 +1,51 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UserManagement.Data.Entities;
 using UserManagement.Models;
 
 namespace UserManagement.Services.Interfaces;
 
 /// <summary>
-/// Defines an interface for interacting with User Logs
+/// Defines an interface for asynchronously interacting with user logs.
 /// </summary>
 public interface ILogService
 {
     /// <summary>
-    /// Creates a new log with the specified details
+    /// Asynchronously creates a new log entry for the specified user and action.
     /// </summary>
-    /// <param name="userId"> The Id of the user the action was performed on </param>
-    /// <param name="action"> The action performed on the user </param>
-    /// <param name="details"> Details of the action </param>
-    void LogAction(User user, string action, string? details = null);
+    /// <param name="user">The user the action was performed on.</param>
+    /// <param name="action">The action that was performed.</param>
+    /// <param name="details">Optional details about the action.</param>
+    /// <returns>A task that represents the asynchronous log creation operation.</returns>
+    Task LogActionAsync(User user, string action, string? details = null);
 
     /// <summary>
-    /// Gets all Logs
+    /// Asynchronously creates a new log entry for the specified user and action.
     /// </summary>
-    /// <returns> A List of all Logs </returns>
-    IEnumerable<Log> GetAll();
+    /// <param name="userId">The id of the user the action was performed on</param>
+    /// <param name="action">The action that was performed</param>
+    /// <param name="details">Optional details about the action</param>
+    /// <returns></returns>
+    Task LogActionAsync(long userId, string action, string? details = null);
 
     /// <summary>
-    /// Get all logs associated with a specific User
+    /// Asynchronously retrieves all logs.
     /// </summary>
-    /// <param name="userId"> The Id of the User </param>
-    /// <returns> A list of all Logs for the specified User </returns>
-    IEnumerable<Log> GetByUserId(long userId);
+    /// <returns>A task that represents the asynchronous operation. The task result contains a list of all logs.</returns>
+    Task<List<Log>> GetAllAsync();
 
     /// <summary>
-    /// Get a specific Log by it's Id
+    /// Asynchronously retrieves all logs associated with the specified user ID.
     /// </summary>
-    /// <returns> A single Log with the matching Id </returns>
-    Log? GetById(long id);
+    /// <param name="userId">The ID of the user whose logs are to be retrieved.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains a list of logs for the specified user.</returns>
+    Task<List<Log>> GetByUserIdAsync(long userId);
+
+    /// <summary>
+    /// Asynchronously retrieves a specific log by its ID.
+    /// </summary>
+    /// <param name="id">The ID of the log to retrieve.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the log if found; otherwise, null.</returns>
+    Task<Log?> GetByIdAsync(long id);
 
 }

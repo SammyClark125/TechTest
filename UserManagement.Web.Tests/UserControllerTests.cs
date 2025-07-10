@@ -8,6 +8,7 @@ using System;
 using UserManagement.Services.Interfaces;
 using System.Linq;
 using UserManagement.Data.Entities;
+using System.Threading.Tasks;
 
 namespace UserManagement.Web.Tests;
 
@@ -32,8 +33,8 @@ public class UserControllerTests
         };
 
         _userService
-            .Setup(s => s.GetAll())
-            .Returns(users);
+            .Setup(s => s.GetAllAsync())
+            .ReturnsAsync(users.ToList());
 
         return users;
     }
@@ -41,9 +42,8 @@ public class UserControllerTests
 
 
     [Fact]
-    public void List_WhenServiceReturnsUsers_ModelMustContainUsers()
+    public async Task List_WhenServiceReturnsUsers_ModelMustContainUsers()
     {
-        // Arrange
         var controller = CreateController();
         var users = SetupUsers();
 
@@ -57,49 +57,42 @@ public class UserControllerTests
             IsActive = u.IsActive
         });
 
-        // Act
-        var result = controller.List();
+        var result = await controller.List();
 
-        // Assert
         result.Model
             .Should().BeOfType<UserListViewModel>()
             .Which.Items.Should().BeEquivalentTo(expectedViewModels);
     }
 
     [Fact]
-    public void ViewUser_WhenUserExists_ReturnsViewWithUserLogsViewModel()
+    public async Task ViewUser_WhenUserExists_ReturnsViewWithUserLogsViewModel()
     {
-        // Arrange
         var user = new User { Id = 1 };
         var logs = Enumerable.Empty<Log>();
-        _userService.Setup(s => s.GetById(1)).Returns(user);
-        _logService.Setup(s => s.GetByUserId(1)).Returns(logs);
+        _userService.Setup(s => s.GetByIdAsync(1)).ReturnsAsync(user);
+        _logService.Setup(s => s.GetByUserIdAsync(1)).ReturnsAsync(logs.ToList());
 
-        // Act
-        var result = CreateController().ViewUser(1) as ViewResult;
+        var result = await CreateController().ViewUser(1) as ViewResult;
 
-        // Assert
         result.Should().NotBeNull();
         var model = result!.Model.Should().BeOfType<UserLogsViewModel>().Subject;
         model.User.Should().BeSameAs(user);
-        model.Logs.Should().BeSameAs(logs);
+        model.Logs.Should().BeEquivalentTo(logs);
     }
 
-
     [Fact]
-    public void ViewUser_WhenUserNotFound_ReturnsNotFound()
+    public async Task ViewUser_WhenUserNotFound_ReturnsNotFound()
     {
-        _userService.Setup(s => s.GetById(1)).Returns((User?)null);
+        _userService.Setup(s => s.GetByIdAsync(1)).ReturnsAsync((User?)null);
 
-        var result = CreateController().ViewUser(1);
+        var result = await CreateController().ViewUser(1);
 
         result.Should().BeOfType<NotFoundResult>();
     }
 
     [Fact]
-    public void AddUser_Post_WhenValid_ShouldCreateAndRedirect()
+    public async Task AddUser_Post_WhenValid_ShouldCreateAndRedirect()
     {
-        // Arrange
         var request = new AddUserRequest
         {
             Forename = "Alice",
@@ -111,12 +104,10 @@ public class UserControllerTests
 
         var controller = CreateController();
 
-        // Act
-        var result = controller.AddUser(request) as RedirectToActionResult;
+        var result = await controller.AddUser(request) as RedirectToActionResult;
 
-        // Assert
         result!.ActionName.Should().Be("List");
-        _userService.Verify(s => s.CreateUser(It.Is<User>(u =>
+        _userService.Verify(s => s.CreateUserAsync(It.Is<User>(u =>
             u.Forename == request.Forename &&
             u.Surname == request.Surname &&
             u.Email == request.Email &&
@@ -125,81 +116,72 @@ public class UserControllerTests
         )), Times.Once);
     }
 
-
     [Fact]
-    public void AddUser_Post_WithInvalidModelState_ShouldReturnView()
+    public async Task AddUser_Post_WithInvalidModelState_ShouldReturnView()
     {
         var controller = CreateController();
         controller.ModelState.AddModelError("Error", "Invalid");
 
-        var request = new AddUserRequest(); // can be empty or invalid
+        var request = new AddUserRequest();
 
-        var result = controller.AddUser(request) as ViewResult;
+        var result = await controller.AddUser(request) as ViewResult;
 
         result.Should().NotBeNull();
         result!.Model.Should().BeSameAs(request);
     }
 
     [Fact]
-    public void EditUser_Post_WhenValid_ShouldUpdateAndRedirect()
+    public async Task EditUser_Post_WhenValid_ShouldUpdateAndRedirect()
     {
         var existing = new User { Id = 1, Forename = "John" };
-        _userService.Setup(x => x.GetById(existing.Id)).Returns(existing);
+        _userService.Setup(x => x.GetByIdAsync(existing.Id)).ReturnsAsync(existing);
 
         var updated = new User { Id = 1, Forename = "Jane" };
 
-        var result = CreateController().EditUser(updated) as RedirectToActionResult;
+        var result = await CreateController().EditUser(updated) as RedirectToActionResult;
 
         result!.ActionName.Should().Be("List");
         existing.Forename.Should().Be("Jane");
-        _userService.Verify(s => s.UpdateUser(existing), Times.Once);
+        _userService.Verify(s => s.UpdateUserAsync(existing), Times.Once);
     }
 
     [Fact]
-    public void EditUser_Post_WhenUserNotFound_ShouldReturnNotFound()
+    public async Task EditUser_Post_WhenUserNotFound_ShouldReturnNotFound()
     {
-        // Arrange
         var updated = new User { Id = 99, Forename = "Ghost" };
-        _userService.Setup(x => x.GetById(updated.Id)).Returns((User?)null);
+        _userService.Setup(x => x.GetByIdAsync(updated.Id)).ReturnsAsync((User?)null);
 
-        // Act
-        var result = CreateController().EditUser(updated);
+        var result = await CreateController().EditUser(updated);
 
-        // Assert
         result.Should().BeOfType<NotFoundResult>();
     }
 
-
     [Fact]
-    public void DeleteUser_WhenUserExists_ShouldDeleteAndRedirect()
+    public async Task DeleteUser_WhenUserExists_ShouldDeleteAndRedirect()
     {
         var user = new User { Id = 1 };
-        _userService.Setup(s => s.GetById(1)).Returns(user);
+        _userService.Setup(s => s.GetByIdAsync(1)).ReturnsAsync(user);
 
-        var result = CreateController().DeleteUser(1) as RedirectToActionResult;
+        var result = await CreateController().DeleteUser(1) as RedirectToActionResult;
 
         result!.ActionName.Should().Be("List");
-        _userService.Verify(s => s.DeleteUser(user), Times.Once);
+        _userService.Verify(s => s.DeleteUserAsync(user), Times.Once);
     }
 
     [Fact]
-    public void DeleteUser_WhenUserNotFound_ShouldReturnNotFound()
+    public async Task DeleteUser_WhenUserNotFound_ShouldReturnNotFound()
     {
-        // Arrange
-        _userService.Setup(s => s.GetById(42)).Returns((User?)null);
+        _userService.Setup(s => s.GetByIdAsync(42)).ReturnsAsync((User?)null);
 
-        // Act
-        var result = CreateController().DeleteUser(42);
+        var result = await CreateController().DeleteUser(42);
 
-        // Assert
         result.Should().BeOfType<NotFoundResult>();
-        _userService.Verify(s => s.DeleteUser(It.IsAny<User>()), Times.Never);
+        _userService.Verify(s => s.DeleteUserAsync(It.IsAny<User>()), Times.Never);
     }
 
     [Fact]
-    public void AddUser_Post_WhenValid_ShouldLogCreation()
+    public async Task AddUser_Post_WhenValid_ShouldLogCreation()
     {
-        // Arrange
         var request = new AddUserRequest
         {
             Forename = "Log",
@@ -211,34 +193,31 @@ public class UserControllerTests
 
         var controller = CreateController();
 
-        // Act
-        controller.AddUser(request);
+        await controller.AddUser(request);
 
-        // Assert
         _logService.Verify(log =>
-            log.LogAction(It.Is<User>(u => u.Email == request.Email), "Created", $"Created user {request.Email}"),
+            log.LogActionAsync(It.Is<User>(u => u.Email == request.Email), "Created", $"Created user {request.Email}"),
             Times.Once);
     }
 
     [Fact]
-    public void AddUser_Post_WithInvalidModelState_ShouldNotLog()
+    public async Task AddUser_Post_WithInvalidModelState_ShouldNotLog()
     {
         var controller = CreateController();
         controller.ModelState.AddModelError("Email", "Required");
 
         var request = new AddUserRequest { Email = "bad@example.com" };
 
-        controller.AddUser(request);
+        await controller.AddUser(request);
 
-        _logService.Verify(log => log.LogAction(It.IsAny<User>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        _logService.Verify(log => log.LogActionAsync(It.IsAny<User>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
 
     [Fact]
-    public void EditUser_Post_WhenValid_ShouldLogEdit()
+    public async Task EditUser_Post_WhenValid_ShouldLogEdit()
     {
-        // Arrange
         var existing = new User { Id = 1, Email = "existing@example.com" };
-        _userService.Setup(s => s.GetById(existing.Id)).Returns(existing);
+        _userService.Setup(s => s.GetByIdAsync(existing.Id)).ReturnsAsync(existing);
 
         var updated = new User
         {
@@ -250,60 +229,58 @@ public class UserControllerTests
             IsActive = false
         };
 
-        // Act
-        CreateController().EditUser(updated);
+        await CreateController().EditUser(updated);
 
-        // Assert
         _logService.Verify(log =>
-            log.LogAction(existing, "Edited", $"Edited user {existing.Email}"),
+            log.LogActionAsync(existing, "Edited", $"Edited user {existing.Email}"),
             Times.Once);
     }
 
     [Fact]
-    public void EditUser_Post_WithInvalidModelState_ShouldNotLog()
+    public async Task EditUser_Post_WithInvalidModelState_ShouldNotLog()
     {
         var controller = CreateController();
         controller.ModelState.AddModelError("Email", "Required");
 
         var updated = new User { Id = 1, Email = "invalid@example.com" };
 
-        controller.EditUser(updated);
+        await controller.EditUser(updated);
 
-        _logService.Verify(log => log.LogAction(It.IsAny<User>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        _logService.Verify(log => log.LogActionAsync(It.IsAny<User>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
 
     [Fact]
-    public void EditUser_Post_WhenUserNotFound_ShouldNotLog()
+    public async Task EditUser_Post_WhenUserNotFound_ShouldNotLog()
     {
         var updated = new User { Id = 999, Email = "ghost@example.com" };
-        _userService.Setup(s => s.GetById(updated.Id)).Returns((User?)null);
+        _userService.Setup(s => s.GetByIdAsync(updated.Id)).ReturnsAsync((User?)null);
 
-        CreateController().EditUser(updated);
+        await CreateController().EditUser(updated);
 
-        _logService.Verify(log => log.LogAction(It.IsAny<User>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        _logService.Verify(log => log.LogActionAsync(It.IsAny<User>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
 
     [Fact]
-    public void DeleteUser_WhenUserExists_ShouldLogDeletion()
+    public async Task DeleteUser_WhenUserExists_ShouldLogDeletion()
     {
         var user = new User { Id = 1, Email = "delete@example.com" };
-        _userService.Setup(s => s.GetById(1)).Returns(user);
+        _userService.Setup(s => s.GetByIdAsync(1)).ReturnsAsync(user);
 
-        CreateController().DeleteUser(1);
+        await CreateController().DeleteUser(1);
 
         _logService.Verify(log =>
-            log.LogAction(user, "Deleted", $"Deleted user {user.Email}"),
+            log.LogActionAsync(user.Id, "Deleted", $"Deleted user {user.Email}"),
             Times.Once);
     }
 
     [Fact]
-    public void DeleteUser_WhenUserNotFound_ShouldNotLog()
+    public async Task DeleteUser_WhenUserNotFound_ShouldNotLog()
     {
-        _userService.Setup(s => s.GetById(42)).Returns((User?)null);
+        _userService.Setup(s => s.GetByIdAsync(42)).ReturnsAsync((User?)null);
 
-        CreateController().DeleteUser(42);
+        await CreateController().DeleteUser(42);
 
-        _logService.Verify(log => log.LogAction(It.IsAny<User>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        _logService.Verify(log => log.LogActionAsync(It.IsAny<User>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
 
 }

@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using UserManagement.Data.Entities;
 using UserManagement.Models;
@@ -31,48 +34,49 @@ public class DataContext : DbContext, IDataContext
             new User { Id = 11, Forename = "Robin", Surname = "Feld", DateOfBirth = new DateOnly(1950, 4, 28), Email = "rfeld@example.com", IsActive = true },
         });
 
-        // Configuring User relationship
-        model.Entity<User>()
-        .HasMany(u => u.Logs)
-        .WithOne(l => l.User)
-        .OnDelete(DeleteBehavior.Restrict); // Necessary to maintain logs on deleting users
-
         // Configuring Log relationship
         model.Entity<Log>()
             .HasOne(log => log.User)
             .WithMany(user => user.Logs)
             .HasForeignKey(log => log.UserId)
-            .IsRequired()
-            .OnDelete(DeleteBehavior.Cascade);
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.NoAction);
     }
 
     public DbSet<User>? Users { get; set; }
     public DbSet<Log>? UserLogEntries { get; set; }
 
-    public IQueryable<TEntity> GetAll<TEntity>() where TEntity : class
-        => base.Set<TEntity>();
 
-    public TEntity? GetByID<TEntity>(object key) where TEntity : class
+
+    public async Task<List<TEntity>> GetAllIncludingAsync<TEntity>(params Expression<Func<TEntity, object?>>[] includes) where TEntity : class
     {
-        return base.Find<TEntity>(key);
+        IQueryable<TEntity> query = Set<TEntity>();
+        foreach (var include in includes)
+        {
+            query = query.Include(include);
+        }
+
+        return await query.ToListAsync();
     }
 
-    public void Create<TEntity>(TEntity entity) where TEntity : class
+    public async Task<TEntity?> GetByIDAsync<TEntity>(object key) where TEntity : class => await Set<TEntity>().FindAsync(key);
+
+    public async Task CreateAsync<TEntity>(TEntity entity) where TEntity : class
     {
-        base.Add(entity);
-        SaveChanges();
+        await AddAsync(entity);
+        await SaveChangesAsync();
     }
 
-    public new void Update<TEntity>(TEntity entity) where TEntity : class
+    public async Task UpdateAsync<TEntity>(TEntity entity) where TEntity : class
     {
-        base.Update(entity);
-        SaveChanges();
+        Update(entity);
+        await SaveChangesAsync();
     }
 
-    public void Delete<TEntity>(TEntity entity) where TEntity : class
+    public async Task DeleteAsync<TEntity>(TEntity entity) where TEntity : class
     {
-        base.Remove(entity);
-        SaveChanges();
+        Remove(entity);
+        await SaveChangesAsync();
     }
 
 }

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
 using UserManagement.Data;
 using UserManagement.Data.Entities;
 using UserManagement.Models;
@@ -16,9 +16,9 @@ public class LogService : ILogService
 
 
 
-    public void LogAction(User user, string action, string? details = null)
+    public async Task LogActionAsync(User user, string action, string? details = null)
     {
-        Log newLog = new Log
+        var newLog = new Log
         {
             UserId = user.Id,
             Action = action,
@@ -27,24 +27,38 @@ public class LogService : ILogService
             User = user
         };
 
-        _dataAccess.Create<Log>(newLog);
+        await _dataAccess.CreateAsync(newLog);
     }
 
-    public IEnumerable<Log> GetAll()
+    public async Task LogActionAsync(long userId, string action, string? details = null) // Overload used for logging on deleting users
     {
-        return _dataAccess.GetAll<Log>().Include(l => l.User);
+        var newLog = new Log
+        {
+            UserId = userId,
+            Action = action,
+            Timestamp = DateTime.Now,
+            Details = details
+        };
+
+        await _dataAccess.CreateAsync(newLog);
     }
 
-    public IEnumerable<Log> GetByUserId(long userId)
+    public async Task<List<Log>> GetAllAsync()
     {
-        return _dataAccess.GetAll<Log>().Where(l => l.UserId == userId);
+        return await _dataAccess.GetAllIncludingAsync<Log>(l => l.User); // Includes parameter to include users in results
     }
 
-    public Log? GetById(long id)
+    public async Task<List<Log>> GetByUserIdAsync(long userId)
     {
-        return _dataAccess.GetAll<Log>()
-        .Include(l => l.User)
-        .FirstOrDefault(l => l.Id == id);
+        var logs = await _dataAccess.GetAllIncludingAsync<Log>(l => l.User);
+        return logs.Where(l => l.UserId == userId).ToList();
+    }
+
+    public async Task<Log?> GetByIdAsync(long id)
+    {
+        return (await _dataAccess
+            .GetAllIncludingAsync<Log>(l => l.User))
+            .FirstOrDefault(l => l.Id == id);
     }
 
 }

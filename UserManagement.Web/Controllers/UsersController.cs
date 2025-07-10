@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using System.Threading.Tasks;
 using UserManagement.Models;
 using UserManagement.Services.Domain.Interfaces;
 using UserManagement.Services.Interfaces;
@@ -18,10 +19,12 @@ public class UsersController : Controller
         _logService = logService;
     }
 
+
+
     [HttpGet]
-    public ViewResult List()
+    public async Task<ViewResult> List()
     {
-        var items = _userService.GetAll().Select(p => new UserListItemViewModel
+        var items = (await _userService.GetAllAsync()).Select(p => new UserListItemViewModel
         {
             Id = p.Id,
             Forename = p.Forename,
@@ -40,9 +43,9 @@ public class UsersController : Controller
     }
 
     [HttpGet("Active")]
-    public ViewResult ListActive()
+    public async Task<ViewResult> ListActive()
     {
-        var items = _userService.FilterByActive(true).Select(p => new UserListItemViewModel
+        var items = (await _userService.FilterByActiveAsync(true)).Select(p => new UserListItemViewModel
         {
             Id = p.Id,
             Forename = p.Forename,
@@ -61,9 +64,9 @@ public class UsersController : Controller
     }
 
     [HttpGet("NonActive")]
-    public ViewResult ListNonActive()
+    public async Task<ViewResult> ListNonActive()
     {
-        var items = _userService.FilterByActive(false).Select(p => new UserListItemViewModel
+        var items = (await _userService.FilterByActiveAsync(false)).Select(p => new UserListItemViewModel
         {
             Id = p.Id,
             Forename = p.Forename,
@@ -81,9 +84,6 @@ public class UsersController : Controller
         return View("List", model);
     }
 
-
-
-    // Add user
     [HttpGet("AddUser")]
     public IActionResult AddUser()
     {
@@ -92,7 +92,7 @@ public class UsersController : Controller
 
     [HttpPost("AddUser")]
     [ValidateAntiForgeryToken]
-    public IActionResult AddUser(AddUserRequest request)
+    public async Task<IActionResult> AddUser(AddUserRequest request)
     {
         if (!ModelState.IsValid)
         {
@@ -108,40 +108,36 @@ public class UsersController : Controller
             IsActive = request.IsActive
         };
 
-        _userService.CreateUser(user);
-        _logService.LogAction(user, "Created", $"Created user {user.Email}");
+        await _userService.CreateUserAsync(user);
+        await _logService.LogActionAsync(user, "Created", $"Created user {user.Email}");
 
         return RedirectToAction("List");
     }
 
-
-
-    // View User
     [HttpGet("ViewUser")]
-    public IActionResult ViewUser(long id)
+    public async Task<IActionResult> ViewUser(long id)
     {
-        var user = _userService.GetById(id);
+        var user = await _userService.GetByIdAsync(id);
         if (user == null)
         {
             return NotFound();
         }
 
+        var logs = await _logService.GetByUserIdAsync(user.Id);
+
         var model = new UserLogsViewModel
         {
             User = user,
-            Logs = _logService.GetByUserId(user.Id)
+            Logs = logs
         };
 
         return View(model);
     }
 
-
-
-    // Edit User
     [HttpGet("EditUser")]
-    public IActionResult EditUser(long id)
+    public async Task<IActionResult> EditUser(long id)
     {
-        var user = _userService.GetById(id);
+        var user = await _userService.GetByIdAsync(id);
 
         if (user == null)
         {
@@ -153,14 +149,14 @@ public class UsersController : Controller
 
     [HttpPost("EditUser")]
     [ValidateAntiForgeryToken]
-    public IActionResult EditUser(User updatedUser)
+    public async Task<IActionResult> EditUser(User updatedUser)
     {
         if (!ModelState.IsValid)
         {
             return View(updatedUser);
         }
 
-        var existingUser = _userService.GetById(updatedUser.Id);
+        var existingUser = await _userService.GetByIdAsync(updatedUser.Id);
 
         if (existingUser == null)
         {
@@ -173,29 +169,26 @@ public class UsersController : Controller
         existingUser.Email = updatedUser.Email;
         existingUser.IsActive = updatedUser.IsActive;
 
-        _userService.UpdateUser(existingUser);
-        _logService.LogAction(existingUser, "Edited", $"Edited user {existingUser.Email}");
+        await _userService.UpdateUserAsync(existingUser);
+        await _logService.LogActionAsync(existingUser, "Edited", $"Edited user {existingUser.Email}");
+
         return RedirectToAction("List");
     }
 
-
-
-    // Delete User
     [HttpPost("DeleteUser")]
     [ValidateAntiForgeryToken]
-    public IActionResult DeleteUser(long id)
+    public async Task<IActionResult> DeleteUser(long id)
     {
-        var user = _userService.GetById(id);
+        var user = await _userService.GetByIdAsync(id);
         if (user == null)
         {
             return NotFound();
         }
 
-        _userService.DeleteUser(user);
-        _logService.LogAction(user, "Deleted", $"Deleted user {user.Email}");
+        await _logService.LogActionAsync(id, "Deleted", $"Deleted user {user.Email}");
+        await _userService.DeleteUserAsync(user);
+
         return RedirectToAction("List");
     }
-
-
 
 }
