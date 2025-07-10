@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UserManagement.Data.Entities;
 using UserManagement.Models;
 
@@ -12,28 +13,27 @@ public interface ILogService
     /// <summary>
     /// Creates a new log with the specified details
     /// </summary>
-    /// <param name="userId"> The Id of the user the action was performed on </param>
+    /// <param name="user"> The user the action was performed on </param>
     /// <param name="action"> The action performed on the user </param>
     /// <param name="details"> Details of the action </param>
-    void LogAction(User user, string action, string? details = null);
+    Task LogActionAsync(User user, string action, string? details = null);
 
     /// <summary>
     /// Gets all Logs
     /// </summary>
     /// <returns> A List of all Logs </returns>
-    IEnumerable<Log> GetAll();
+    Task<List<Log>> GetAllAsync();
 
     /// <summary>
     /// Get all logs associated with a specific User
     /// </summary>
     /// <param name="userId"> The Id of the User </param>
     /// <returns> A list of all Logs for the specified User </returns>
-    IEnumerable<Log> GetByUserId(long userId);
+    Task<List<Log>> GetByUserIdAsync(long userId);
 
     /// <summary>
-    /// Get a specific Log by it's Id
+    /// Get a specific Log by its Id
     /// </summary>
-    /// <returns> A single Log with the matching Id </returns>
-    Log? GetById(long id);
+    Task<Log?> GetByIdAsync(long id);
 
 }

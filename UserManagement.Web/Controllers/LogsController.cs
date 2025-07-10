@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using UserManagement.Services.Interfaces;
 using UserManagement.Web.Models.Logs;
 
@@ -18,26 +19,25 @@ public class LogsController : Controller
 
 
     [HttpGet("Index")]
-    public IActionResult Index(string? email, string? actionFilter, int page = 1, int pageSize = 10)
+    public async Task<IActionResult> Index(string? email, string? actionFilter, int page = 1, int pageSize = 10)
     {
-        // Get all logs
-        var logs = _logService.GetAll();
+        var logs = await _logService.GetAllAsync();
 
         // Filter by Email
         if (!string.IsNullOrWhiteSpace(email))
         {
             email = email.Trim();
-            logs = logs.Where(l => l.User.Email.Contains(email, StringComparison.OrdinalIgnoreCase));
+            logs = logs.Where(l => l.User.Email.Contains(email, StringComparison.OrdinalIgnoreCase)).ToList();
         }
 
         // Filter by Action
         if (!string.IsNullOrWhiteSpace(actionFilter))
         {
-            logs = logs.Where(l => l.Action.Contains(actionFilter, StringComparison.OrdinalIgnoreCase));
+            logs = logs.Where(l => l.Action.Contains(actionFilter, StringComparison.OrdinalIgnoreCase)).ToList();
         }
 
-        // Splitting into pages
-        var total = logs.Count();
+        // Pagination
+        var total = logs.Count;
         var paged = logs
             .OrderByDescending(l => l.Timestamp)
             .Skip((page - 1) * pageSize)
@@ -69,9 +69,9 @@ public class LogsController : Controller
     }
 
     [HttpGet("View")]
-    public IActionResult View(long id)
+    public async Task<IActionResult> View(long id)
     {
-        var log = _logService.GetById(id);
+        var log = await _logService.GetByIdAsync(id);
 
         if (log == null)
         {
