@@ -1,4 +1,7 @@
+using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using UserManagement.Data;
 using UserManagement.Models;
 using UserManagement.Services.Domain.Implementations;
@@ -10,125 +13,137 @@ public class UserServiceTests
     private readonly Mock<IDataContext> _dataContext = new();
     private UserService CreateService() => new(_dataContext.Object);
 
-    private IQueryable<User> SetupUsers(string forename = "Johnny", string surname = "User", string email = "juser@example.com", bool isActive = true)
+    private List<User> SetupUsers(string forename = "Johnny", string surname = "User", string email = "juser@example.com", bool isActive = true)
     {
-        var users = new[]
+        var users = new List<User>
         {
             new User
             {
+                Id = 1,
                 Forename = forename,
                 Surname = surname,
                 Email = email,
-                IsActive = isActive
+                IsActive = isActive,
+                DateOfBirth = new DateOnly(1990, 1, 1)
             }
-        }.AsQueryable();
+        };
 
         _dataContext
-            .Setup(s => s.GetAll<User>())
-            .Returns(users);
+            .Setup(s => s.GetAllIncludingAsync<User>())
+            .ReturnsAsync(users);
 
         return users;
     }
 
     [Fact]
-    public void GetAll_WhenContextReturnsEntities_MustReturnSameEntities()
+    public async Task GetAll_WhenContextReturnsEntities_MustReturnSameEntities()
     {
         // Arrange
         var service = CreateService();
         var users = SetupUsers();
 
         // Act
-        var result = service.GetAll();
+        var result = await service.GetAllAsync();
 
         // Assert
-        result.Should().BeEquivalentTo(users);
+        result.Should().BeEquivalentTo(users.OrderBy(u => u.Id));
     }
 
     [Fact]
-    public void FilterByActive_WhenCalled_FiltersCorrectly()
+    public async Task FilterByActive_WhenCalled_FiltersCorrectly()
     {
         // Arrange
-        var activeUsers = SetupUsers(isActive: true);
+        var users = new List<User>
+        {
+            new User { Id = 1, IsActive = true, Email = "active1@example.com", DateOfBirth = new DateOnly(1990,1,1) },
+            new User { Id = 2, IsActive = false, Email = "inactive@example.com", DateOfBirth = new DateOnly(1990,1,1) },
+            new User { Id = 3, IsActive = true, Email = "active2@example.com", DateOfBirth = new DateOnly(1990,1,1) }
+        };
+
+        _dataContext.Setup(s => s.GetAllIncludingAsync<User>())
+            .ReturnsAsync(users);
+
         var service = CreateService();
 
         // Act
-        var result = service.FilterByActive(true);
+        var result = await service.FilterByActiveAsync(true);
 
         // Assert
-        result.Should().BeEquivalentTo(activeUsers);
+        result.Should().OnlyContain(u => u.IsActive);
+        result.Should().HaveCount(2);
     }
 
     [Fact]
-    public void GetById_WhenUserExists_ReturnsUser()
+    public async Task GetById_WhenUserExists_ReturnsUser()
     {
         // Arrange
-        var user = new User { Id = 1L, Email = "test@test.com" };
-        _dataContext.Setup(x => x.GetByID<User>(1L)).Returns(user);
+        var user = new User { Id = 1L, Email = "test@test.com", DateOfBirth = new DateOnly(1990, 1, 1) };
+        _dataContext.Setup(x => x.GetByIDAsync<User>(1L)).ReturnsAsync(user);
         var service = CreateService();
 
         // Act
-        var result = service.GetById(1L);
+        var result = await service.GetByIdAsync(1L);
 
         // Assert
         result.Should().BeSameAs(user);
     }
 
     [Fact]
-    public void CreateUser_ShouldCallDataContextCreate()
+    public async Task CreateUser_ShouldCallDataContextCreateAsync()
     {
         // Arrange
         var user = new User();
         var service = CreateService();
 
         // Act
-        service.CreateUser(user);
+        await service.CreateUserAsync(user);
 
         // Assert
-        _dataContext.Verify(x => x.Create(user), Times.Once);
+        _dataContext.Verify(x => x.CreateAsync(user), Times.Once);
     }
 
     [Fact]
-    public void UpdateUser_ShouldCallDataContextUpdate()
+    public async Task UpdateUser_ShouldCallDataContextUpdateAsync()
     {
         // Arrange
         var user = new User();
         var service = CreateService();
 
         // Act
-        service.UpdateUser(user);
+        await service.UpdateUserAsync(user);
 
         // Assert
-        _dataContext.Verify(x => x.Update(user), Times.Once);
+        _dataContext.Verify(x => x.UpdateAsync(user), Times.Once);
     }
 
     [Fact]
-    public void DeleteUser_WhenUserExists_ShouldCallDelete()
+    public async Task DeleteUser_WhenUserExists_ShouldCallDeleteAsync()
     {
         // Arrange
         var user = new User { Id = 1 };
-        _dataContext.Setup(x => x.GetByID<User>(user.Id)).Returns(user);
+        _dataContext.Setup(x => x.GetByIDAsync<User>(user.Id)).ReturnsAsync(user);
         var service = CreateService();
 
         // Act
-        service.DeleteUser(user);
+        await service.DeleteUserAsync(user);
 
         // Assert
-        _dataContext.Verify(x => x.Delete(user), Times.Once);
+        _dataContext.Verify(x => x.DeleteAsync(user), Times.Once);
     }
 
     [Fact]
-    public void DeleteUser_WhenUserNotFound_ShouldNotCallDelete()
+    public async Task DeleteUser_WhenUserNotFound_ShouldNotCallDelete()
     {
         // Arrange
         var user = new User { Id = 1 };
-        _dataContext.Setup(x => x.GetByID<User>(user.Id)).Returns((User?)null);
+        _dataContext.Setup(x => x.GetByIDAsync<User>(user.Id)).ReturnsAsync((User?)null);
         var service = CreateService();
 
         // Act
-        service.DeleteUser(user);
+        await service.DeleteUserAsync(user);
 
         // Assert
-        _dataContext.Verify(x => x.Delete(It.IsAny<User>()), Times.Never);
+        _dataContext.Verify(x => x.DeleteAsync(It.IsAny<User>()), Times.Never);
     }
 
 }

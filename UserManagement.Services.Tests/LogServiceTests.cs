@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
 using UserManagement.Data;
 using UserManagement.Data.Entities;
 using UserManagement.Models;
@@ -22,12 +22,13 @@ public class LogServiceTests
         Forename = "Test",
         Surname = "User",
         Email = "test@example.com",
-        IsActive = true
+        IsActive = true,
+        DateOfBirth = new DateOnly(1990, 1, 1)
     };
 
-    private IQueryable<Log> SetupLogs()
+    private List<Log> SetupLogs()
     {
-        var logs = new List<Log>
+        return new List<Log>
         {
             new Log
             {
@@ -47,94 +48,99 @@ public class LogServiceTests
                 Details = "User edited",
                 User = TestUser
             }
-        }.AsQueryable();
-
-        var mockSet = new Mock<DbSet<Log>>();
-        mockSet.As<IQueryable<Log>>().Setup(m => m.Provider).Returns(logs.Provider);
-        mockSet.As<IQueryable<Log>>().Setup(m => m.Expression).Returns(logs.Expression);
-        mockSet.As<IQueryable<Log>>().Setup(m => m.ElementType).Returns(logs.ElementType);
-        mockSet.As<IQueryable<Log>>().Setup(m => m.GetEnumerator()).Returns(logs.GetEnumerator());
-
-        _dataContext.Setup(c => c.GetAll<Log>()).Returns(mockSet.Object);
-
-        return logs;
+        };
     }
 
 
 
     [Fact]
-    public void LogAction_ShouldCreateLog()
+    public async Task LogActionAsync_ShouldCreateLog()
     {
         // Arrange
         var user = TestUser;
         var service = CreateService();
 
         // Act
-        service.LogAction(user, "TestAction", "TestDetails");
+        await service.LogActionAsync(user, "TestAction", "TestDetails");
 
         // Assert
-        _dataContext.Verify(x => x.Create(It.Is<Log>(log =>
+        _dataContext.Verify(x => x.CreateAsync(It.Is<Log>(log =>
             log.UserId == user.Id &&
             log.Action == "TestAction" &&
             log.Details == "TestDetails" &&
-            log.User == user
+            log.User == user &&
+            log.Timestamp != default
         )), Times.Once);
     }
 
     [Fact]
-    public void GetAll_ShouldReturnAllLogsIncludingUsers()
-    {
-        // Arrange
-        var expectedLogs = SetupLogs();
-        var service = CreateService();
-
-        // Act
-        var result = service.GetAll();
-
-        // Assert
-        result.Should().BeEquivalentTo(expectedLogs, options => options
-        .IncludingNestedObjects());
-    }
-
-    [Fact]
-    public void GetByUserId_ShouldReturnMatchingLogs()
+    public async Task GetAllAsync_ShouldReturnAllLogsIncludingUsers()
     {
         // Arrange
         var logs = SetupLogs();
+        _dataContext.Setup(c => c.GetAllIncludingAsync<Log>(It.IsAny<System.Linq.Expressions.Expression<Func<Log, object>>>()
+))
+            .ReturnsAsync(logs);
+
         var service = CreateService();
 
         // Act
-        var result = service.GetByUserId(1);
+        var result = await service.GetAllAsync();
 
         // Assert
-        result.Should().BeEquivalentTo(logs.Where(l => l.UserId == 1));
+        result.Should().BeEquivalentTo(logs, options => options.WithStrictOrdering());
     }
 
     [Fact]
-    public void GetById_WhenLogExists_ReturnsLogWithUser()
+    public async Task GetByUserIdAsync_ShouldReturnMatchingLogs()
     {
         // Arrange
         var logs = SetupLogs();
+        _dataContext.Setup(c => c.GetAllIncludingAsync<Log>(It.IsAny<System.Linq.Expressions.Expression<Func<Log, object>>>()
+))
+            .ReturnsAsync(logs);
+
         var service = CreateService();
 
         // Act
-        var result = service.GetById(1);
+        var result = await service.GetByUserIdAsync(1);
+
+        // Assert
+        result.Should().BeEquivalentTo(logs.Where(l => l.UserId == 1), options => options.WithStrictOrdering());
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_WhenLogExists_ReturnsLogWithUser()
+    {
+        // Arrange
+        var logs = SetupLogs();
+        _dataContext.Setup(c => c.GetAllIncludingAsync<Log>(It.IsAny<System.Linq.Expressions.Expression<Func<Log, object>>>()
+))
+            .ReturnsAsync(logs);
+
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetByIdAsync(1);
 
         // Assert
         result.Should().NotBeNull();
-        result.Should().BeEquivalentTo(logs.First(l => l.Id == 1), options => options
-            .IncludingNestedObjects());
+        result.Should().BeEquivalentTo(logs.First(l => l.Id == 1));
     }
 
     [Fact]
-    public void GetById_WhenLogDoesNotExist_ReturnsNull()
+    public async Task GetByIdAsync_WhenLogDoesNotExist_ReturnsNull()
     {
         // Arrange
-        SetupLogs();
+        var logs = SetupLogs();
+        _dataContext.Setup(c => c.GetAllIncludingAsync<Log>(It.IsAny<System.Linq.Expressions.Expression<Func<Log, object>>>()
+))
+            .ReturnsAsync(logs);
+
         var service = CreateService();
 
         // Act
-        var result = service.GetById(999);
+        var result = await service.GetByIdAsync(999);
 
         // Assert
         result.Should().BeNull();
