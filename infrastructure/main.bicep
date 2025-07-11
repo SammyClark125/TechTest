@@ -14,13 +14,13 @@ param location string = 'uksouth'
 
 @description('App Service pricing tier')
 @allowed([
-  'F1'
-  'B1'
-  'S1'
+  'F1' // Free
+  'B1' // Basic
+  'S1' // Standard
 ])
 param sku string = 'F1'
 
-// Name variables
+// Resource name variables
 var webAppName = '${appName}-${environment}'
 var planName = '${webAppName}-plan'
 var appInsightsName = '${webAppName}-ai'
@@ -31,7 +31,7 @@ resource appServicePlan 'Microsoft.Web/serverfarms@2022-03-01' = {
   location: location
   sku: {
     name: sku
-    tier: sku == 'F1' ? 'Free' : 'Basic'
+    tier: sku == 'F1' ? 'Free' : (sku == 'B1' ? 'Basic' : 'Standard')
   }
   kind: 'app'
 }
@@ -67,6 +67,10 @@ resource webApp 'Microsoft.Web/sites@2022-03-01' = {
       ]
     }
   }
+  dependsOn: [
+    appServicePlan
+    appInsights
+  ]
 }
 
 // Outputs
