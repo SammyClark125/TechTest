@@ -1,4 +1,4 @@
-![CI](https://github.com/YOUR_USERNAME/YOUR_REPO_NAME/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/SammyClark125/TechTest/actions/workflows/ci.yml/badge.svg)
 
 
 
