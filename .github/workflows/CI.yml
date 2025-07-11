@@ -43,8 +43,11 @@ jobs:
     - name: Run tests with coverage
       run: dotnet test ${{ matrix.test-project }} --no-build --configuration Release --collect:"XPlat Code Coverage" --results-directory ./TestResults
 
+    - name: Set artifact-safe name
+      run: echo "ARTIFACT_NAME=test-results-$(basename ${{ matrix.test-project }} .csproj)" >> $GITHUB_ENV
+
     - name: Upload test results
       uses: actions/upload-artifact@v4
       with:
-        name: test-results-${{ matrix.test-project }}
+        name: ${{ env.ARTIFACT_NAME }}
         path: ./TestResults
