@@ -1,26 +1,37 @@
 name: IaC Deploy
 
 on:
-  workflow_dispatch: # manual trigger
+    workflow_dispatch:
 
 jobs:
-  deploy:
-    runs-on: ubuntu-latest
+    deploy:
+        runs-on: ubuntu-latest
 
-    steps:
-    - name: Checkout repo
-      uses: actions/checkout@v4
+        env:
+            RESOURCE_GROUP: Tech_Test
+            LOCATION: uksouth
 
-    - name: Login to Azure
-      uses: azure/login@v1
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        steps:
+            - name: Checkout repo
+              uses: actions/checkout@v4
 
-    - name: Deploy Bicep file
-      uses: azure/cli@v1
-      with:
-        inlineScript: |
-          az deployment group create \
-            --resource-group Tech_Test \
-            --template-file infrastructure/main.bicep \
-            --parameters appName=techtest-app
+            - name: Login to Azure
+              uses: azure/login@v1
+              with:
+                  creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+            - name: Create resource group (if not exists)
+              run: |
+                  az group create \
+                    --name $RESOURCE_GROUP \
+                    --location $LOCATION
+
+            - name: Deploy Bicep file
+              uses: azure/cli@v1
+              with:
+                  inlineScript: |
+                      az deployment group create \
+                        --name iac-deploy-${{ github.run_number }} \
+                        --resource-group $RESOURCE_GROUP \
+                        --template-file infrastructure/main.bicep \
+                        --parameters appName=techtest-app environment=dev location=$LOCATION
