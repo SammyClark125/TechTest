@@ -1,4 +1,4 @@
-![CI](https://github.com/SammyClark125/TechTest/actions/workflows/ci.yml/badge.svg)
+[![CI/CD](https://github.com/SammyClark125/TechTest/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/SammyClark125/TechTest/actions/workflows/ci-cd.yml)
 
 
 
