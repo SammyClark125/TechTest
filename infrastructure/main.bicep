@@ -14,58 +14,47 @@ param location string = 'uksouth'
 
 @description('App Service pricing tier')
 @allowed([
-  'F1'
-  'B1'
-  'S1'
+  'F1' // Free
+  'B1' // Basic
+  'S1' // Standard
 ])
 param sku string = 'F1'
 
-// Name variables
+// Resource name variables
 var webAppName = '${appName}-${environment}'
 var planName = '${webAppName}-plan'
 var appInsightsName = '${webAppName}-ai'
 
-// App Service Plan
-resource appServicePlan 'Microsoft.Web/serverfarms@2022-03-01' = {
+// Reuse existing App Service Plan
+resource appServicePlan 'Microsoft.Web/serverfarms@2022-03-01' existing = {
   name: planName
-  location: location
-  sku: {
-    name: sku
-    tier: sku == 'F1' ? 'Free' : 'Basic'
-  }
-  kind: 'app'
 }
 
-// Application Insights
-resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
+// Reuse existing Application Insights
+resource appInsights 'Microsoft.Insights/components@2020-02-02' existing = {
   name: appInsightsName
-  location: location
-  kind: 'web'
-  properties: {
-    Application_Type: 'web'
-  }
 }
 
-// Web App
-resource webApp 'Microsoft.Web/sites@2022-03-01' = {
+// Reuse existing Web App and update settings
+resource webApp 'Microsoft.Web/sites@2022-03-01' existing = {
   name: webAppName
-  location: location
-  kind: 'app'
+}
+
+// Update Web App Configuration
+resource config 'Microsoft.Web/sites/config@2022-03-01' = {
+  parent: webApp
+  name: 'web'
   properties: {
-    serverFarmId: appServicePlan.id
-    httpsOnly: true
-    siteConfig: {
-      appSettings: [
-        {
-          name: 'ASPNETCORE_ENVIRONMENT'
-          value: environment
-        }
-        {
-          name: 'ApplicationInsights__InstrumentationKey'
-          value: appInsights.properties.InstrumentationKey
-        }
-      ]
-    }
+    appSettings: [
+      {
+        name: 'ASPNETCORE_ENVIRONMENT'
+        value: environment
+      }
+      {
+        name: 'ApplicationInsights__InstrumentationKey'
+        value: appInsights.properties.InstrumentationKey
+      }
+    ]
   }
 }
 
