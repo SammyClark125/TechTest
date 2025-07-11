@@ -14,13 +14,13 @@ param location string = 'uksouth'
 
 @description('App Service pricing tier')
 @allowed([
-  'F1'
-  'B1'
-  'S1'
+  'F1' // Free
+  'B1' // Basic
+  'S1' // Standard
 ])
 param sku string = 'F1'
 
-// Name variables
+// Resource name variables
 var webAppName = '${appName}-${environment}'
 var planName = '${webAppName}-plan'
 var appInsightsName = '${webAppName}-ai'
