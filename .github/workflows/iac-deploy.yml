@@ -2,14 +2,26 @@ name: IaC Deploy
 
 on:
     workflow_dispatch:
+        inputs:
+            environment:
+                description: "Environment to deploy (dev, test, prod)"
+                required: true
+                default: dev
+                type: choice
+                options:
+                    - dev
+                    - test
+                    - prod
 
 jobs:
     deploy:
         runs-on: ubuntu-latest
 
         env:
-            RESOURCE_GROUP: Tech_Test
+            APP_NAME: techtest-app
             LOCATION: uksouth
+            ENVIRONMENT: ${{ github.event.inputs.environment }}
+            RESOURCE_GROUP: techtest-rg${{ github.event.inputs.environment == 'prod' && '' || format('-{0}', github.event.inputs.environment) }}
 
         steps:
             - name: Checkout repo
@@ -34,4 +46,6 @@ jobs:
                         --name iac-deploy-${{ github.run_number }} \
                         --resource-group $RESOURCE_GROUP \
                         --template-file infrastructure/main.bicep \
-                        --parameters appName=techtest-app environment=dev location=$LOCATION
+                        --parameters appName=$APP_NAME \
+                                     environment=$ENVIRONMENT \
+                                     location=$LOCATION
